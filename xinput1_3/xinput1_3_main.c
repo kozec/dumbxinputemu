@@ -20,23 +20,59 @@
  */
 
 #define COBJMACROS
-#include "config.h"
 #include <assert.h>
 #include <stdarg.h>
 #include <string.h>
 
-#include "wine/debug.h"
+#ifdef __WINEGCC__
+	// Available only with winegcc
+	#include "wine/debug.h"
+	WINE_DEFAULT_DEBUG_CHANNEL(xinput);
+#endif
 #include "windef.h"
 #include "winbase.h"
 #include "winerror.h"
+#include "unknwn.h"
 
 #include "dinput.h"
+#ifdef __MINGW32__
+	// Mingw compiles weird mutation with no usable symbols without this
+	// TODO: I don't really know why this helps
+	#undef WINAPI
+	#define WINAPI
+#endif
 #include "xinput.h"
+
+#ifndef TRACE
+	// Unavailable outside wine
+	#define TRACE(...) do { } while(0)
+	#define FIXME(...) do { } while(0)
+	#define WARN(...)  do { } while(0)
+	#define ERR(...)   do { } while(0)
+#endif
+
+#ifdef __MINGW32__
+	// Stuff missing in mingw
+	typedef struct {
+		WORD wButtons;
+		BYTE bLeftTrigger;
+		BYTE bRightTrigger;
+		SHORT sThumbLX;
+		SHORT sThumbLY;
+		SHORT sThumbRX;
+		SHORT sThumbRY;
+		DWORD dwPaddingReserved;
+	} XINPUT_GAMEPAD_EX;
+
+	typedef struct {
+		DWORD dwPacketNumber;
+		XINPUT_GAMEPAD_EX Gamepad;
+	} XINPUT_STATE_EX;
+#endif
 
 /* Not defined in the headers, used only by XInputGetStateEx */
 #define XINPUT_GAMEPAD_GUIDE 0x0400
 
-WINE_DEFAULT_DEBUG_CHANNEL(xinput);
 
 struct CapsFlags
 {

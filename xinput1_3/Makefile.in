@@ -1,8 +1,0 @@
-MODULE    = xinput1_3.dll
-IMPORTLIB = xinput
-IMPORTS   = uuid dxguid dinput dinput8 ole32
-
-C_SRCS = \
-	xinput1_3_main.c
-
-RC_SRCS = version.rc
