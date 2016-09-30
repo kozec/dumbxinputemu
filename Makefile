@@ -5,7 +5,7 @@ CFLAGS = -Wl,--export-all-symbols
 LIB_DIR = -L/usr/i686-w64-mingw32/lib/
 LIBS = -ldxguid -ldinput -ldinput8
 
-xinput1_3.dll: xinput1_3_main.c
+xinput1_3.dll: xinput1_3/xinput1_3_main.c
 	${GCC} -shared ${CFLAGS} ${INCLUDE_DIR} ${LIB_DIR} $? ${LIBS} -o $@
 
 clean:
