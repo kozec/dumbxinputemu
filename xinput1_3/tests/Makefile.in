@@ -1,5 +1,0 @@
-TESTDLL   = xinput1_3.dll
-IMPORTS   = user32
-
-C_SRCS = \
-	xinput.c
