@@ -18,61 +18,32 @@
  * License along with this library; if not, write to the Free Software
  * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301, USA
  */
+#include "xinput1_3.h"
 
-#define COBJMACROS
-#include <assert.h>
-#include <stdarg.h>
-#include <string.h>
-
-#ifdef __WINEGCC__
-	// Available only with winegcc
-	#include "wine/debug.h"
-	WINE_DEFAULT_DEBUG_CHANNEL(xinput);
-#endif
 #include "windef.h"
 #include "winbase.h"
 #include "winerror.h"
 #include "unknwn.h"
+#include <stdio.h>
 
+#define DIRECTINPUT_VERSION 0x0800
 #include "dinput.h"
-#ifdef __MINGW32__
-	// Mingw compiles weird mutation with no usable symbols without this
-	// TODO: I don't really know why this helps
-	#undef WINAPI
-	#define WINAPI
-#endif
-#include "xinput.h"
 
 #ifndef TRACE
 	// Unavailable outside wine
-	#define TRACE(...) do { } while(0)
+	#define TRACE(format, ...) printf("TRACE[%d] " format, __LINE__, ## __VA_ARGS__)
 	#define FIXME(...) do { } while(0)
 	#define WARN(...)  do { } while(0)
 	#define ERR(...)   do { } while(0)
 #endif
 
-#ifdef __MINGW32__
-	// Stuff missing in mingw
-	typedef struct {
-		WORD wButtons;
-		BYTE bLeftTrigger;
-		BYTE bRightTrigger;
-		SHORT sThumbLX;
-		SHORT sThumbLY;
-		SHORT sThumbRX;
-		SHORT sThumbRY;
-		DWORD dwPaddingReserved;
-	} XINPUT_GAMEPAD_EX;
-
-	typedef struct {
-		DWORD dwPacketNumber;
-		XINPUT_GAMEPAD_EX Gamepad;
-	} XINPUT_STATE_EX;
+#ifndef DECLSPEC_HOTPATCH
+	#define DECLSPEC_HOTPATCH
 #endif
 
-/* Not defined in the headers, used only by XInputGetStateEx */
-#define XINPUT_GAMEPAD_GUIDE 0x0400
-
+#ifndef XINPUT_GAMEPAD_GUIDE
+	#define XINPUT_GAMEPAD_GUIDE 0x0400
+#endif
 
 struct CapsFlags
 {
@@ -85,13 +56,14 @@ static struct ControllerMap
     LPDIRECTINPUTDEVICE8A device;
     BOOL connected, acquired;
     struct CapsFlags caps;
-    XINPUT_STATE state;
+    XINPUT_STATE_EX state_ex;
     XINPUT_VIBRATION vibration;
     BOOL vibration_dirty;
 
     DIEFFECT effect_data;
     LPDIRECTINPUTEFFECT effect_instance;
 } controllers[XUSER_MAX_COUNT];
+
 
 static struct
 {
@@ -101,6 +73,7 @@ static struct
 } dinput;
 
 #define STARTUP_DINPUT if (!dinput.iface) dinput_start();
+
 
 /* ========================= Internal functions ============================= */
 
@@ -179,7 +152,7 @@ static BOOL dinput_set_range(const LPDIRECTINPUTDEVICE8A device)
         return TRUE;
 }
 
-static void dinput_joystate_to_xinput(DIJOYSTATE2 *js, XINPUT_GAMEPAD *gamepad, struct CapsFlags *caps)
+static void dinput_joystate_to_xinput(DIJOYSTATE2 *js, XINPUT_GAMEPAD_EX *gamepad, struct CapsFlags *caps)
 {
     static const int xbox_buttons[] = {
         XINPUT_GAMEPAD_A,
@@ -190,12 +163,13 @@ static void dinput_joystate_to_xinput(DIJOYSTATE2 *js, XINPUT_GAMEPAD *gamepad, 
         XINPUT_GAMEPAD_RIGHT_SHOULDER,
         XINPUT_GAMEPAD_BACK,
         XINPUT_GAMEPAD_START,
-        0, /* xbox key not used */
+        XINPUT_GAMEPAD_GUIDE,
         XINPUT_GAMEPAD_LEFT_THUMB,
         XINPUT_GAMEPAD_RIGHT_THUMB
     };
     int i, buttons;
 
+    gamepad->dwPaddingReserved = 0;
     gamepad->wButtons = 0x0000;
     /* First the D-Pad which is recognized as a POV in dinput */
     if (caps->pov)
@@ -291,7 +265,8 @@ static void dinput_send_effect(int index, int power)
         hr = IDirectInputEffect_SetParameters(*instance, effect, DIEP_AXES | DIEP_DIRECTION | DIEP_NODOWNLOAD);
         if (FAILED(hr))
         {
-            IUnknown_Release(*instance);
+            // TODO: I may just introduce memory leak
+			// IUnknown_Release(*instance);
             *instance = NULL;
             WARN("Failed to configure effect (0x%x)\n", hr);
             return;
@@ -364,7 +339,7 @@ static void dinput_update(int index)
 {
     HRESULT hr;
     DIJOYSTATE2 data;
-    XINPUT_GAMEPAD gamepad;
+    XINPUT_GAMEPAD_EX gamepad;
 
     if (dinput.enabled)
     {
@@ -394,28 +369,38 @@ static void dinput_update(int index)
     else
         memset(&gamepad, 0, sizeof(gamepad));
 
-    if (memcmp(&controllers[index].state.Gamepad, &gamepad, sizeof(gamepad)))
+    if (memcmp(&controllers[index].state_ex.Gamepad, &gamepad, sizeof(gamepad)))
     {
-        controllers[index].state.Gamepad = gamepad;
-        controllers[index].state.dwPacketNumber++;
+        controllers[index].state_ex.Gamepad = gamepad;
+        controllers[index].state_ex.dwPacketNumber++;
     }
 }
+
+
 
 /* ============================ Dll Functions =============================== */
 
-
-BOOL WINAPI DllMain(HINSTANCE inst, DWORD reason, LPVOID reserved)
+BOOL APIENTRY DllMain( HMODULE hModule,
+                       DWORD  ul_reason_for_call,
+                       LPVOID lpReserved
+					 )
 {
-    switch(reason)
-    {
-    case DLL_PROCESS_ATTACH:
-        DisableThreadLibraryCalls(inst);
-        break;
-    }
-    return TRUE;
+	switch (ul_reason_for_call)
+	{
+	case DLL_PROCESS_ATTACH:
+		DisableThreadLibraryCalls(hModule);
+		break;
+	case DLL_THREAD_ATTACH:
+	case DLL_THREAD_DETACH:
+	case DLL_PROCESS_DETACH:
+		break;
+	}
+	return TRUE;
 }
 
-void WINAPI XInputEnable(BOOL enable)
+
+
+void EXPORT XInputEnable(BOOL enable)
 {
     /* Setting to false will stop messages from XInputSetState being sent
     to the controllers. Setting to true will send the last vibration
@@ -438,9 +423,9 @@ void WINAPI XInputEnable(BOOL enable)
     }
 }
 
-DWORD WINAPI XInputSetState(DWORD index, XINPUT_VIBRATION* vibration)
+DWORD EXPORT XInputSetState(DWORD index, XINPUT_VIBRATION* vibration)
 {
-    TRACE("(%u %p)\n", index, vibration);
+    // TRACE("(%u %p)\n", index, vibration);
 
     STARTUP_DINPUT
 
@@ -471,7 +456,27 @@ DWORD WINAPI XInputSetState(DWORD index, XINPUT_VIBRATION* vibration)
     return ERROR_SUCCESS;
 }
 
-DWORD WINAPI XInputGetState(DWORD index, XINPUT_STATE* state)
+
+DWORD EXPORT DECLSPEC_HOTPATCH XInputGetStateEx(DWORD index, XINPUT_STATE_EX* state_ex)
+{
+    TRACE("(%u %p)\n", index, state_ex);
+
+	STARTUP_DINPUT
+
+    if (index >= XUSER_MAX_COUNT)
+        return ERROR_BAD_ARGUMENTS;
+    if (!controllers[index].connected)
+        return ERROR_DEVICE_NOT_CONNECTED;
+
+	dinput_update(index);
+	//broforce does not pass a correct XINPUT_STATE_EX, so only copy the old struct size
+	*(XINPUT_GAMEPAD *)state_ex = *(XINPUT_GAMEPAD *)&controllers[index].state_ex;
+
+    return ERROR_SUCCESS;
+}
+
+
+DWORD EXPORT DECLSPEC_HOTPATCH XInputGetState(DWORD index, XINPUT_STATE* state)
 {
     union
     {
@@ -480,43 +485,19 @@ DWORD WINAPI XInputGetState(DWORD index, XINPUT_STATE* state)
     } xinput;
     DWORD ret;
 
-    TRACE("(%u %p)\n", index, state);
-    STARTUP_DINPUT
-
-    if (index >= XUSER_MAX_COUNT)
-        return ERROR_BAD_ARGUMENTS;
-    if (!controllers[index].connected)
-         return ERROR_DEVICE_NOT_CONNECTED;
-
-
-    dinput_update(index);
-    *state = controllers[index].state;
+    ret = XInputGetStateEx(index, &xinput.state_ex);
+    if (ret != ERROR_SUCCESS)
+        return ret;
 
     /* The main difference between this and the Ex version is the media guide button */
-    /* TODO: Check on this.
-     * xinput.state.Gamepad.wButtons &= ~XINPUT_GAMEPAD_GUIDE;
-     * *state = xinput.state;
-     */
+    *state = xinput.state;
+	state->Gamepad.wButtons &= ~XINPUT_GAMEPAD_GUIDE;
 
     return ERROR_SUCCESS;
 }
 
-DWORD WINAPI XInputGetStateEx(DWORD index, XINPUT_STATE_EX* state_ex)
-{
-    static int warn_once;
 
-    if (!warn_once++)
-        FIXME("(index %u, state %p) Stub!\n", index, state_ex);
-
-    if (index >= XUSER_MAX_COUNT)
-        return ERROR_BAD_ARGUMENTS;
-    if (!controllers[index].connected)
-        return ERROR_DEVICE_NOT_CONNECTED;
-
-    return ERROR_NOT_SUPPORTED;
-}
-
-DWORD WINAPI XInputGetKeystroke(DWORD index, DWORD reserved, PXINPUT_KEYSTROKE keystroke)
+DWORD EXPORT XInputGetKeystroke(DWORD index, DWORD reserved, PXINPUT_KEYSTROKE keystroke)
 {
     FIXME("(index %u, reserved %u, keystroke %p) Stub!\n", index, reserved, keystroke);
 
@@ -533,7 +514,7 @@ DWORD WINAPI XInputGetKeystroke(DWORD index, DWORD reserved, PXINPUT_KEYSTROKE k
 #define XINPUT_CAPS_WIRELESS      0x0002
 #define XINPUT_CAPS_NO_NAVIGATION 0x0010
 
-DWORD WINAPI XInputGetCapabilities(DWORD index, DWORD flags, XINPUT_CAPABILITIES* capabilities)
+DWORD EXPORT XInputGetCapabilities(DWORD index, DWORD flags, XINPUT_CAPABILITIES* capabilities)
 {
     TRACE("(%u %d %p)\n", index, flags, capabilities);
 
@@ -550,20 +531,20 @@ DWORD WINAPI XInputGetCapabilities(DWORD index, DWORD flags, XINPUT_CAPABILITIES
     capabilities->Flags = 0;
     if (controllers[index].caps.jedi)
         capabilities->Flags |= XINPUT_CAPS_FFB_SUPPORTED;
-    if (controllers[index].caps.wireless)
-        capabilities->Flags |= XINPUT_CAPS_WIRELESS;
+    //if (controllers[index].caps.wireless)
+    //    capabilities->Flags |= XINPUT_CAPS_WIRELESS;
     if (!controllers[index].caps.pov)
         capabilities->Flags |= XINPUT_CAPS_NO_NAVIGATION;
 
     dinput_update(index);
 
     capabilities->Vibration = controllers[index].vibration;
-    capabilities->Gamepad = controllers[index].state.Gamepad;
+    capabilities->Gamepad = *(XINPUT_GAMEPAD *)&controllers[index].state_ex.Gamepad;
 
     return ERROR_SUCCESS;
 }
 
-DWORD WINAPI XInputGetDSoundAudioDeviceGuids(DWORD index, GUID* render_guid, GUID* capture_guid)
+DWORD EXPORT XInputGetDSoundAudioDeviceGuids(DWORD index, GUID* render_guid, GUID* capture_guid)
 {
     FIXME("(index %u, render guid %p, capture guid %p) Stub!\n", index, render_guid, capture_guid);
 
@@ -575,7 +556,7 @@ DWORD WINAPI XInputGetDSoundAudioDeviceGuids(DWORD index, GUID* render_guid, GUI
     return ERROR_NOT_SUPPORTED;
 }
 
-DWORD WINAPI XInputGetBatteryInformation(DWORD index, BYTE type, XINPUT_BATTERY_INFORMATION* battery)
+DWORD EXPORT XInputGetBatteryInformation(DWORD index, BYTE type, XINPUT_BATTERY_INFORMATION* battery)
 {
     TRACE("(%u %u %p) Stub!\n", index, type, battery);
 
@@ -591,4 +572,21 @@ DWORD WINAPI XInputGetBatteryInformation(DWORD index, BYTE type, XINPUT_BATTERY_
 
 
     return ERROR_SUCCESS;
+}
+
+
+/* ============================ Additional, undocumented functions =============================== */
+DWORD EXPORT XInputWaitForGuideButton(DWORD dwUserIndex, DWORD dwFlag, LPVOID pVoid)
+{
+	return ERROR_SUCCESS;
+}
+
+DWORD EXPORT XInputCancelGuideButtonWait(DWORD dwUserIndex)
+{
+	return ERROR_SUCCESS;
+}
+
+DWORD EXPORT XInputPowerOffController(DWORD dwUserIndex)
+{
+	return ERROR_SUCCESS;
 }
