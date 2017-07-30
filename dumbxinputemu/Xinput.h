@@ -17,12 +17,10 @@
  * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301, USA
  */
 
-#ifndef __XINPUT1_3_H
-#define __XINPUT1_3_H
+#ifndef __WINE_XINPUT_H
+#define __WINE_XINPUT_H
 
 #include <windef.h>
-
-#define EXPORT __declspec(dllexport)
 
 /*
  * Bitmasks for the joysticks buttons, determines what has
@@ -54,6 +52,56 @@
 #define XINPUT_KEYSTROKE_KEYDOWN        0x0001
 #define XINPUT_KEYSTROKE_KEYUP          0x0002
 #define XINPUT_KEYSTROKE_REPEAT         0x0004
+
+/*
+ * Defines the codes which are returned by XInputGetKeystroke
+ */
+
+#define VK_PAD_A                        0x5800
+#define VK_PAD_B                        0x5801
+#define VK_PAD_X                        0x5802
+#define VK_PAD_Y                        0x5803
+#define VK_PAD_RSHOULDER                0x5804
+#define VK_PAD_LSHOULDER                0x5805
+#define VK_PAD_LTRIGGER                 0x5806
+#define VK_PAD_RTRIGGER                 0x5807
+#define VK_PAD_DPAD_UP                  0x5810
+#define VK_PAD_DPAD_DOWN                0x5811
+#define VK_PAD_DPAD_LEFT                0x5812
+#define VK_PAD_DPAD_RIGHT               0x5813
+#define VK_PAD_START                    0x5814
+#define VK_PAD_BACK                     0x5815
+#define VK_PAD_LTHUMB_PRESS             0x5816
+#define VK_PAD_RTHUMB_PRESS             0x5817
+#define VK_PAD_LTHUMB_UP                0x5820
+#define VK_PAD_LTHUMB_DOWN              0x5821
+#define VK_PAD_LTHUMB_RIGHT             0x5822
+#define VK_PAD_LTHUMB_LEFT              0x5823
+#define VK_PAD_LTHUMB_UPLEFT            0x5824
+#define VK_PAD_LTHUMB_UPRIGHT           0x5825
+#define VK_PAD_LTHUMB_DOWNRIGHT         0x5826
+#define VK_PAD_LTHUMB_DOWNLEFT          0x5827
+#define VK_PAD_RTHUMB_UP                0x5830
+#define VK_PAD_RTHUMB_DOWN              0x5831
+#define VK_PAD_RTHUMB_RIGHT             0x5832
+#define VK_PAD_RTHUMB_LEFT              0x5833
+#define VK_PAD_RTHUMB_UPLEFT            0x5834
+#define VK_PAD_RTHUMB_UPRIGHT           0x5835
+#define VK_PAD_RTHUMB_DOWNRIGHT         0x5836
+#define VK_PAD_RTHUMB_DOWNLEFT          0x5837
+
+/*
+ * Deadzones are for analogue joystick controls on the joypad
+ * which determine when input should be assumed to be in the
+ * middle of the pad. This is a threshold to stop a joypad
+ * controlling the game when the player isn't touching the
+ * controls.
+ */
+
+#define XINPUT_GAMEPAD_LEFT_THUMB_DEADZONE  7849
+#define XINPUT_GAMEPAD_RIGHT_THUMB_DEADZONE 8689
+#define XINPUT_GAMEPAD_TRIGGER_THRESHOLD    30
+
 
 /*
  * Defines what type of abilities the type of joystick has
@@ -122,26 +170,10 @@ typedef struct _XINPUT_GAMEPAD {
     SHORT sThumbRY;
 } XINPUT_GAMEPAD, *PXINPUT_GAMEPAD;
 
-typedef struct _XINPUT_GAMEPAD_EX {
-    WORD wButtons;
-    BYTE bLeftTrigger;
-    BYTE bRightTrigger;
-    SHORT sThumbLX;
-    SHORT sThumbLY;
-    SHORT sThumbRX;
-    SHORT sThumbRY;
-    DWORD dwPaddingReserved;
-} XINPUT_GAMEPAD_EX, *PXINPUT_GAMEPAD_EX;
-
 typedef struct _XINPUT_STATE {
     DWORD dwPacketNumber;
     XINPUT_GAMEPAD Gamepad;
 } XINPUT_STATE, *PXINPUT_STATE;
-
-typedef struct _XINPUT_STATE_EX {
-    DWORD dwPacketNumber;
-    XINPUT_GAMEPAD_EX Gamepad;
-} XINPUT_STATE_EX, *PXINPUT_STATE_EX;
 
 /*
  * Defines the structure of how much vibration is set on both the
@@ -192,18 +224,16 @@ typedef struct _XINPUT_BATTERY_INFORMATION
 extern "C" {
 #endif
 
-void EXPORT XInputEnable(BOOL);
-DWORD EXPORT XInputSetState(DWORD, XINPUT_VIBRATION*);
-DWORD EXPORT XInputGetState(DWORD, XINPUT_STATE*);
-DWORD EXPORT XInputGetKeystroke(DWORD, DWORD, PXINPUT_KEYSTROKE);
-DWORD EXPORT XInputGetCapabilities(DWORD, DWORD, XINPUT_CAPABILITIES*);
-DWORD EXPORT XInputGetDSoundAudioDeviceGuids(DWORD, GUID*, GUID*);
-DWORD EXPORT XInputGetBatteryInformation(DWORD, BYTE, XINPUT_BATTERY_INFORMATION*);
-
-DWORD EXPORT XInputGetStateEx(DWORD, XINPUT_STATE_EX*);
+void WINAPI XInputEnable(WINBOOL);
+DWORD WINAPI XInputSetState(DWORD, XINPUT_VIBRATION*);
+DWORD WINAPI XInputGetState(DWORD, XINPUT_STATE*);
+DWORD WINAPI XInputGetKeystroke(DWORD, DWORD, PXINPUT_KEYSTROKE);
+DWORD WINAPI XInputGetCapabilities(DWORD, DWORD, XINPUT_CAPABILITIES*);
+DWORD WINAPI XInputGetDSoundAudioDeviceGuids(DWORD, GUID*, GUID*);
+DWORD WINAPI XInputGetBatteryInformation(DWORD, BYTE, XINPUT_BATTERY_INFORMATION*);
 
 #ifdef __cplusplus
 }
 #endif
 
-#endif /* __XINPUT1_3_H */
+#endif /* __WINE_XINPUT_H */

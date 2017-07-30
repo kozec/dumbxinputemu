@@ -4,7 +4,7 @@ Dumb xinput Emulator
 xinput dll reimplementation compatibile with DirectInput controllers. Think x360ce without configuration.
 
 ##### Usage
-Copy xinput1_3.dll next to game executable and start the game.
+Copy xinput1_3.dll next to game executable and start the game. For recent games, try copying xinput9_1_0.dll as well if first one doesn't works.
 
 ##### Why in the...?
 This is meant mainly for using Steam Controller or XBox 360 pad with Wine.
@@ -15,4 +15,4 @@ This is meant mainly for using Steam Controller or XBox 360 pad with Wine.
 - run `make` or `make 64bit` for 64bit version
 
 ##### Credits
-Based on xinput1_3.dll implementation in Wine and [wine-xinput patch by 00cpxxx](https://github.com/00cpxxx/wine-xinput)
+Based on xinput1_3.dll implementation in Wine, [wine-xinput patch by 00cpxxx](https://github.com/00cpxxx/wine-xinput) and [xfakeinput by NeonMan](https://github.com/NeonMan/xfakeinput)
