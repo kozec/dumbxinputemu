@@ -41,43 +41,10 @@ static struct {
     int mapped;
 } dinput;
 
-static XINPUT_CAPABILITIES default_capabilities = {
-    (BYTE) 0x1,
-    (BYTE) 0x1,
-    (WORD) 0x4,
-    {
-        /*wButtons*/      (WORD)  0xF3FF,
-        /*bLeftTrigger*/  (BYTE)  0x1,
-        /*bRightTrigger*/ (BYTE)  0x1,
-        /*sThumbLX*/      (SHORT) 0x1,
-        /*sThumbLY*/      (SHORT) 0x1,
-        /*sThumbRX*/      (SHORT) 0x1,
-        /*sThumbRY*/      (SHORT) 0x1
-    },
-    {
-        /*wLeftMotorSpeed*/  (WORD) 0x1,
-        /*wRightMotorSpeed*/ (WORD) 0x1
-    }
-};
-
-///Initial pad state, from a real pad at rest
-static XINPUT_STATE initial_state = {
-    (DWORD)0x1000, /*dwPacketNumber*/
-    {
-        (WORD)  0,
-        (BYTE)  0,
-        (BYTE)  0,
-        (SHORT) 3580,
-        (SHORT) -4118,
-        (SHORT) -3524,
-        (SHORT) 329
-    }
-};
 
 /* ========================= Internal functions ============================= */
 
 bool initialized = FALSE;
-XINPUT_STATE pad_states[4];
 
 
 static BOOL dinput_is_good(const LPDIRECTINPUTDEVICE8A device, struct CapsFlags *caps)
@@ -204,7 +171,7 @@ static void dinput_joystate_to_xinput(DIJOYSTATE2 *js, XINPUT_GAMEPAD_EX *gamepa
     if (caps->axes >= 4)
     {
         gamepad->sThumbRX = js->lRx;
-        gamepad->sThumbRY = -js->lRy;
+        gamepad->sThumbRY = js->lRy;
     }
     else
         gamepad->sThumbRX = gamepad->sThumbRY = 0;
@@ -394,10 +361,6 @@ void dumb_Init(DWORD version)
     if (initialized)
         return;
     dinput_start();
-    pad_states[0] = initial_state;
-    pad_states[1] = initial_state;
-    pad_states[2] = initial_state;
-    pad_states[3] = initial_state;
     initialized = TRUE;
 }
 
