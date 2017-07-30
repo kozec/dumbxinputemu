@@ -261,6 +261,12 @@ static BOOL CALLBACK dinput_enum_callback(const DIDEVICEINSTANCEA *instance, voi
     LPDIRECTINPUTDEVICE8A device;
     HRESULT hr;
 
+    if(strstr(instance->tszProductName, "(js)") != NULL)
+    {
+        // Skip 'js' devices, use only evdev
+        return DIENUM_CONTINUE;
+    }
+
     if (dinput.mapped == sizeof(controllers) / sizeof(*controllers))
         return DIENUM_STOP;
 
