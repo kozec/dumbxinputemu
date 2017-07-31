@@ -171,16 +171,18 @@ static void dinput_joystate_to_xinput(DIJOYSTATE2 *js, XINPUT_GAMEPAD_EX *gamepa
     if (caps->axes >= 4)
     {
         gamepad->sThumbRX = js->lRx;
-        gamepad->sThumbRY = js->lRy;
+        gamepad->sThumbRY = -js->lRy;
     }
     else
+    {
         gamepad->sThumbRX = gamepad->sThumbRY = 0;
+    }
 
     /* Both triggers */
     if (caps->axes >= 6)
     {
-        gamepad->bLeftTrigger = (255 * (js->lZ + 32767)) / 32767;
-        gamepad->bRightTrigger = (255 * (js->lRz + 32767)) / 32767;
+        gamepad->bLeftTrigger = (255 * (long)(js->lZ + 32767)) / 65535;
+        gamepad->bRightTrigger = (255 * (long)(js->lRz + 32767)) / 65535;
     }
     else
         gamepad->bLeftTrigger = gamepad->bRightTrigger = 0;
@@ -352,9 +354,9 @@ static void dinput_update(int index)
         dinput_joystate_to_xinput(&data, &gamepad, &controllers[index].caps);
     }
     else
-        memset(&gamepad, 0, sizeof(gamepad));
+        memset(&gamepad, 0, sizeof(XINPUT_GAMEPAD_EX));
 
-    if (memcmp(&controllers[index].state_ex.Gamepad, &gamepad, sizeof(gamepad)))
+    if (memcmp(&controllers[index].state_ex.Gamepad, &gamepad, sizeof(XINPUT_GAMEPAD_EX)))
     {
         controllers[index].state_ex.Gamepad = gamepad;
         controllers[index].state_ex.dwPacketNumber++;
@@ -412,7 +414,7 @@ DWORD dumb_XInputGetStateEx(DWORD index, XINPUT_STATE_EX *state_ex, DWORD caller
 
     dinput_update(index);
     // broforce does not pass a correct XINPUT_STATE_EX, so only copy the old struct size
-    *(XINPUT_GAMEPAD *)state_ex = *(XINPUT_GAMEPAD *)&controllers[index].state_ex;
+    *state_ex = controllers[index].state_ex;
 
     return ERROR_SUCCESS;
 }
@@ -498,8 +500,6 @@ DWORD dumb_XInputGetCapabilities(DWORD index, DWORD flags,
     capabilities->Flags = 0;
     if (controllers[index].caps.jedi)
         capabilities->Flags |= XINPUT_CAPS_FFB_SUPPORTED;
-    //if (controllers[index].caps.wireless)
-    //    capabilities->Flags |= XINPUT_CAPS_WIRELESS;
     if (!controllers[index].caps.pov)
         capabilities->Flags |= XINPUT_CAPS_NO_NAVIGATION;
 
