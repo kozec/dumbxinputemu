@@ -1,8 +1,9 @@
 #include "windef.h"
 #include "winbase.h"
 #include "winerror.h"
-#include <stdint.h>
 #include "dumbxinputemu.h"
+#include <stdint.h>
+#include <sal.h>
 
 BOOL APIENTRY DllMain(HANDLE hModule,
     DWORD  ul_reason_for_call,
