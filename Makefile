@@ -17,7 +17,7 @@ LIB_DIR32 = -L{USR}/${MINGW32}/lib/
 
 GCC64 = ${BIN}/x86_64-w64-mingw32-gcc -D _WXI_MINGW
 INCLUDE_DIR64 = -I${USR}/${MINGW64}/include -Idumbxinputemu
-LIB_DIR64 = -L{USR}/${MINGW64}/lib/
+LIB_DIR64 = -L${USR}/${MINGW64}/lib/
 
 .PHONY: default
 default: all
