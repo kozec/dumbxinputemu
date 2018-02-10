@@ -10,12 +10,13 @@
 
 #ifndef TRACE
     // Available only in Wine
-    // #define TRACE(format, ...) printf("TRACE[%d] " format, __LINE__, ## __VA_ARGS__)
+    // #define TRACE(format, ...) do { printf("ERR[%d] " format, __LINE__, ## __VA_ARGS__); fflush(stdout); } while (0)
+    // #define DPRINT(format, ...) do { printf("ERR[%d] " format, __LINE__, ## __VA_ARGS__); fflush(stdout); } while (0)
     #define TRACE(...) do { } while(0)
     #define DPRINT(...) do { } while(0)
     #define FIXME(...) do { } while(0)
     #define WARN(...)  do { } while(0)
-    #define ERR(format, ...) printf("ERR[%d] " format, __LINE__, ## __VA_ARGS__)
+    #define ERR(format, ...) do { printf("ERR[%d] " format, __LINE__, ## __VA_ARGS__); fflush(stdout); } while (0)
 #endif
 
 struct CapsFlags {
@@ -44,7 +45,8 @@ static struct {
 
 /* ========================= Internal functions ============================= */
 
-bool initialized = FALSE;
+static bool initialized = FALSE;
+static void dinput_start(void);
 
 
 static BOOL dinput_is_good(const LPDIRECTINPUTDEVICE8A device, struct CapsFlags *caps)
@@ -299,6 +301,9 @@ static BOOL CALLBACK dinput_enum_callback(const DIDEVICEINSTANCEA *instance, voi
 static void dinput_start(void)
 {
     HRESULT hr;
+    if (initialized)
+        return;
+    initialized = TRUE;
 
     hr = DirectInput8Create(GetModuleHandleA(NULL), 0x0800, &IID_IDirectInput8A,
                             (void **)&dinput.iface, NULL);
@@ -366,15 +371,12 @@ static void dinput_update(int index)
 
 void dumb_Init(DWORD version)
 {
-    if (initialized)
-        return;
-    dinput_start();
-    initialized = TRUE;
+    // Does nothing
 }
 
 void dumb_Cleanup()
 {
-    // Does nothing
+    // Does nothing as well
 }
 
 /* ============================ Dll Functions =============================== */
@@ -463,6 +465,7 @@ void dumb_XInputEnable(BOOL enable)
     TRACE("(%d)\n", enable);
     
     DPRINT("XInputEnable: %d\n", enable);
+    dinput_start();
 
     if ((dinput.enabled = enable))
     {
@@ -488,6 +491,7 @@ DWORD dumb_XInputGetCapabilities(DWORD index, DWORD flags,
     TRACE("(%u %d %p)\n", index, flags, capabilities);
     
     DPRINT("XInputGetCapabilities: %d\n", index);
+    dinput_start();
 
     if (index >= XUSER_MAX_COUNT)
         return ERROR_BAD_ARGUMENTS;
