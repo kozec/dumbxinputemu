@@ -371,12 +371,12 @@ static void dinput_update(int index)
 
 void dumb_Init(DWORD version)
 {
-    // Does nothing
+    dumb_XInputEnable(TRUE);
 }
 
 void dumb_Cleanup()
 {
-    // Does nothing as well
+    // Does nothing
 }
 
 /* ============================ Dll Functions =============================== */
@@ -467,7 +467,8 @@ void dumb_XInputEnable(BOOL enable)
     DPRINT("XInputEnable: %d\n", enable);
     dinput_start();
 
-    if ((dinput.enabled = enable))
+    dinput.enabled = enable;
+    if (enable)
     {
         int i;
         /* Apply the last vibration status that was sent to the controller
