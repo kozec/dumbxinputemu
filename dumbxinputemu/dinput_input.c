@@ -265,11 +265,20 @@ static BOOL CALLBACK dinput_enum_callback(const DIDEVICEINSTANCEA *instance, voi
     LPDIRECTINPUTDEVICE8A device;
     HRESULT hr;
 
-    if(strstr(instance->tszProductName, "(js)") != NULL)
+    if (strstr(instance->tszProductName, "(js)") != NULL)
     {
         // Skip 'js' devices, use only evdev
-        return DIENUM_CONTINUE;
+        if (getenv("XINPUT_NO_IGNORE_JS") == NULL)
+            // ... unless above env. variable is defined
+            return DIENUM_CONTINUE;
     }
+
+    if (getenv("XINPUT_IGNORE_EVDEV") != NULL)
+    {
+        // Skip 'event' devices if asked to
+        if (strstr(instance->tszProductName, "(event)") != NULL)
+            return DIENUM_CONTINUE;
+	}
 
     if (dinput.mapped == sizeof(controllers) / sizeof(*controllers))
         return DIENUM_STOP;
