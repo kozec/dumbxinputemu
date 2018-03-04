@@ -10,7 +10,7 @@
 
 #ifndef TRACE
     // Available only in Wine
-    // #define TRACE(format, ...) do { printf("ERR[%d] " format, __LINE__, ## __VA_ARGS__); fflush(stdout); } while (0)
+    // #define TRACE(format, ...) do { printf("TRACE[%d] " format, __LINE__, ## __VA_ARGS__); fflush(stdout); } while (0)
     // #define DPRINT(format, ...) do { printf("ERR[%d] " format, __LINE__, ## __VA_ARGS__); fflush(stdout); } while (0)
     #define TRACE(...) do { } while(0)
     #define DPRINT(...) do { } while(0)
@@ -371,12 +371,12 @@ static void dinput_update(int index)
 
 void dumb_Init(DWORD version)
 {
-    dumb_XInputEnable(TRUE);
+    // Does nothing
 }
 
 void dumb_Cleanup()
 {
-    // Does nothing
+	// Does nothing as well
 }
 
 /* ============================ Dll Functions =============================== */
@@ -390,7 +390,7 @@ DWORD dumb_XInputGetState(DWORD index, XINPUT_STATE *state, DWORD caller_version
     } xinput;
     DWORD ret;
     
-    DPRINT("XInputGetState: %d\n", index);
+    TRACE("dumb_XInputGetState: %d\n", index);
 
     ret = dumb_XInputGetStateEx(index, &xinput.state_ex, caller_version);
     if (ret != ERROR_SUCCESS)
@@ -406,8 +406,13 @@ DWORD dumb_XInputGetState(DWORD index, XINPUT_STATE *state, DWORD caller_version
 
 DWORD dumb_XInputGetStateEx(DWORD index, XINPUT_STATE_EX *state_ex, DWORD caller_version)
 {
-    TRACE("(%u %p)\n", index, state_ex);
-    DPRINT("XInputGetStateEx: %d\n", index);
+    TRACE("dumb_XInputGetStateEx (%u %p)\n", index, state_ex);
+
+    if (!initialized)
+    {
+        DPRINT("Force-enabling dumb XInput\n");
+        dumb_XInputEnable(TRUE);
+    }
 
     if (index >= XUSER_MAX_COUNT)
         return ERROR_BAD_ARGUMENTS;
@@ -424,9 +429,7 @@ DWORD dumb_XInputGetStateEx(DWORD index, XINPUT_STATE_EX *state_ex, DWORD caller
 
 DWORD dumb_XInputSetState(DWORD index, XINPUT_VIBRATION *vibration, DWORD caller_version)
 {
-    // TRACE("(%u %p)\n", index, vibration);
-    
-    DPRINT("XInputSetState: %d\n", index);
+    TRACE("dumb_XInputSetState (%u %p)\n", index, vibration);
 
     if (index >= XUSER_MAX_COUNT)
         return ERROR_BAD_ARGUMENTS;
@@ -462,9 +465,7 @@ void dumb_XInputEnable(BOOL enable)
     to the controllers. Setting to true will send the last vibration
     value (sent to XInputSetState) to the controller and allow messages to
     be sent */
-    TRACE("(%d)\n", enable);
-    
-    DPRINT("XInputEnable: %d\n", enable);
+    TRACE("dumb_XInputEnable (%d)\n", enable);
     dinput_start();
 
     dinput.enabled = enable;
@@ -489,10 +490,9 @@ void dumb_XInputEnable(BOOL enable)
 DWORD dumb_XInputGetCapabilities(DWORD index, DWORD flags,
         XINPUT_CAPABILITIES *capabilities, DWORD caller_version)
 {
-    TRACE("(%u %d %p)\n", index, flags, capabilities);
-    
-    DPRINT("XInputGetCapabilities: %d\n", index);
-    dinput_start();
+    TRACE("dumb_XInputGetCapabilities (%u %d %p)\n", index, flags, capabilities);
+    if (!initialized)
+        dumb_XInputEnable(TRUE);
 
     if (index >= XUSER_MAX_COUNT)
         return ERROR_BAD_ARGUMENTS;
@@ -520,6 +520,7 @@ DWORD dumb_XInputGetCapabilities(DWORD index, DWORD flags,
 DWORD dumb_XInputGetDSoundAudioDeviceGuids(DWORD dwUserIndex, GUID* pDSoundRenderGuid,
         GUID* pDSoundCaptureGuid, DWORD caller_version)
 {
+    TRACE("dumb_XInputGetDSoundAudioDeviceGuids");
     if (dwUserIndex > 3)
         return ERROR_DEVICE_NOT_CONNECTED;
     *pDSoundRenderGuid = GUID_NULL;
@@ -542,6 +543,7 @@ DWORD dumb_XInputGetKeystroke(DWORD dwUserIndex, DWORD dwReserved,
 DWORD dumb_XInputGetBatteryInformation(DWORD dwUserIndex, BYTE devType,
         XINPUT_BATTERY_INFORMATION *pBatteryInformation, DWORD caller_version)
 {
+    TRACE("dumb_XInputGetBatteryInformation");
     pBatteryInformation->BatteryLevel = BATTERY_LEVEL_FULL;
     pBatteryInformation->BatteryType = BATTERY_TYPE_WIRED;
     return ERROR_SUCCESS;
@@ -552,5 +554,6 @@ DWORD dumb_XInputGetAudioDeviceIds(DWORD dwUserIndex, LPWSTR pRenderDeviceId,
         UINT *pRenderCount, LPWSTR pCaptureDeviceId,
         UINT *pCaptureCount, DWORD caller_version)
 {
+    TRACE("dumb_XInputGetAudioDeviceIds");
     return ERROR_DEVICE_NOT_CONNECTED;
 }
