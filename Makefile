@@ -20,7 +20,7 @@ INCLUDE_DIR64 = -I${USR}/${MINGW64}/include -Idumbxinputemu
 LIB_DIR64 = -L{USR}/${MINGW64}/lib/
 
 .PHONY: default
-default: all
+default: 32bit 64bit
 
 # ---- Targets -------
 
@@ -83,8 +83,11 @@ clean:
 	rm -f build/32/*
 	rm -f build/64/*
 
-32bit: build/32/xinput1_3.dll build/32/xinput9_1_0.dll
+32bit: build/32/xinput1_3.dll build/32/xinput1_4.dll build/32/xinput9_1_0.dll
 
 64bit: build/64/xinput1_3.dll build/64/xinput9_1_0.dll
 
-all: 32bit
+all: build/32/xinput1_1.dll build/32/xinput1_2.dll build/32/xinput1_3.dll \
+	build/32/xinput1_4.dll build/32/xinput9_1_0.dll \
+	build/64/xinput1_1.dll build/64/xinput1_2.dll build/64/xinput1_3.dll \
+	build/64/xinput1_4.dll build/64/xinput9_1_0.dll

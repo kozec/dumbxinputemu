@@ -5,7 +5,7 @@ This is an xinput dll reimplementation compatible with DirectInput controllers. 
 
 ##### Usage
 - [download the latest release](https://github.com/kozec/dumbxinputemu/releases/latest)
-- unpack `xinput1_3.dll` and `xinput9_1_0.dll` next to the game executable and start the game
+- unpack all xinputXYZ.dll's next to the game executable and start the game
 - if you are using Wine, don't forget to add DLL override(s) and set them to 'native'
 - on Wine, dumbxinputemu uses evdev and ignores jsdev devices by default. That should work with almost everything, but you can control this behavior using `XINPUT_NO_IGNORE_JS` and `XINPUT_IGNORE_EVDEV` environment variables.
 
