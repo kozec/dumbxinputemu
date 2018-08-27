@@ -4,10 +4,11 @@ Dumb xinput Emulator
 This is an xinput dll reimplementation compatible with DirectInput controllers. Think of x360ce without the configuration.
 
 ##### Usage
-- [download the latest release](https://github.com/kozec/dumbxinputemu/releases/latest)
-- unpack all xinputXYZ.dll's next to the game executable and start the game
-- if you are using Wine, don't forget to add DLL override(s) and set them to 'native'
-- on Wine, dumbxinputemu uses evdev and ignores jsdev devices by default. That should work with almost everything, but you can control this behavior using `XINPUT_NO_IGNORE_JS` and `XINPUT_IGNORE_EVDEV` environment variables.
+- download and extract the [latest release](https://github.com/kozec/dumbxinputemu/releases/latest)
+- if you are using Wine run `winetricks --force setup_dumbxinputemu.verb`
+- otherwise copy all xinputXYZ.dll's next to the game executable and start the game
+- on Wine, dumbxinputemu uses evdev and ignores jsdev devices by default. That should work with almost everything,
+  but you can control this behavior using `XINPUT_NO_IGNORE_JS` and `XINPUT_IGNORE_EVDEV` environment variables.
 
 ##### Why in the...?
 This is meant mainly for using a Steam Controller or XBox 360 pad with Wine.
