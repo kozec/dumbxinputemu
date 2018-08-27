@@ -1,0 +1,37 @@
+w_metadata setup_dumbxinputemu dlls \
+    title="dumbxinputemu" \
+    publisher="kozec" \
+    year="2018" \
+    media="manual_download" \
+    file1="xinput1_3.dll"
+    file2="xinput1_4.dll"
+    file3="xinput9_1_0.dll"
+    installed_file1="$W_SYSTEM32_DLLS_WIN/xinput1_3.dll" \
+    installed_file2="$W_SYSTEM32_DLLS_WIN/xinput1_4.dll" \
+    installed_file3="$W_SYSTEM32_DLLS_WIN/xinput9_1_0.dll" \
+    homepage="https://github.com/kozec/dumbxinputemu"
+
+DUMBXINPUTEMU_ROOT_DIR=`dirname "$(readlink -f $1)"`
+
+load_setup_dumbxinputemu()
+{
+    if [ ! -e "$DUMBXINPUTEMU_ROOT_DIR/64" ] || [ ! -e "$DUMBXINPUTEMU_ROOT_DIR/32" ]; then
+        (>&2 echo "$DUMBXINPUTEMU_ROOT_DIR/32 or $DUMBXINPUTEMU_ROOT_DIR/64 directory not found.")
+        exit 1
+    fi
+
+    for f in "$file1" "$file2" "$file3"; do
+        w_try cp "$DUMBXINPUTEMU_ROOT_DIR/32/$f" "$W_SYSTEM32_DLLS/$f"
+    done
+
+    if [ "$W_ARCH" = "win64" ]; then
+        for f in "$file1" "$file3"; do
+            w_try cp "$DUMBXINPUTEMU_ROOT_DIR/64/$f" "$W_SYSTEM64_DLLS/$f"
+        done
+    fi
+
+    w_override_dlls native \
+        xinput1_3 \
+        xinput1_4 \
+        xinput9_1_0
+}
